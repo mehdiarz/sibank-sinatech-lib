@@ -14,6 +14,6 @@ public class RialDigitalServiceTest {
         RialDigitalGetTokenRequest rialDigitalGetTokenRequest = new RialDigitalGetTokenRequest();
         rialDigitalGetTokenRequest.setUserId("9910433274");
         ResponseDto<RialDigitalGetTokenReponse> res = new RialDigitalService().getToken(rialDigitalGetTokenRequest);
-        System.out.println(res.getResponseData());
+        System.out.println(res.getResponseData().getToken());
     }
 }

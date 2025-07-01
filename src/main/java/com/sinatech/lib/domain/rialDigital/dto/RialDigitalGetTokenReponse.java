@@ -5,7 +5,7 @@ import com.rahand.common.dto.BaseResponse;
 import lombok.Builder;
 
 public class RialDigitalGetTokenReponse extends BaseResponse {
-    @JsonProperty("token")
+
     private String token;
 
     public RialDigitalGetTokenReponse() {
@@ -13,15 +13,15 @@ public class RialDigitalGetTokenReponse extends BaseResponse {
     }
 
     @Builder
-    public RialDigitalGetTokenReponse(String userId){
+    public RialDigitalGetTokenReponse(String token){
         this.token = token;
     }
 
-    public String getUserId() {
+    public String getToken() {
         return token;
     }
 
-    public void setUserId(String userId) {
+    public void setToken(String token) {
         this.token = token;
     }
 }

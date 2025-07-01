@@ -41,7 +41,6 @@ public class RialDigitalRestClient {
                     .build());
             throw new CustomRuntimeException(CommonErrorMessage.EXTERNAL_SERVICE_EXCEPTION_MESSAGE);
         }
-        System.out.println(response.code());
         return response;
     }
 
