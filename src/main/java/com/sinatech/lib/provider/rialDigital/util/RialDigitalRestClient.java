@@ -16,9 +16,9 @@ public class RialDigitalRestClient {
 
         Response response;
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.readTimeout(360, TimeUnit.SECONDS);
-        builder.writeTimeout(360, TimeUnit.SECONDS);
-        builder.connectTimeout(360, TimeUnit.SECONDS);
+        builder.readTimeout(60, TimeUnit.SECONDS);
+        builder.writeTimeout(60, TimeUnit.SECONDS);
+        builder.connectTimeout(60, TimeUnit.SECONDS);
         OkHttpClient client = builder.build();
 
         try {
