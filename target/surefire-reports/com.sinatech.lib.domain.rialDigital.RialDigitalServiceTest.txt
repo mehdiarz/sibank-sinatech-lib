@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.sinatech.lib.domain.rialDigital.RialDigitalServiceTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.099 s -- in com.sinatech.lib.domain.rialDigital.RialDigitalServiceTest
