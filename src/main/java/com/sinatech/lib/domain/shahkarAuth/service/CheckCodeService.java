@@ -2,8 +2,7 @@ package com.sinatech.lib.domain.shahkarAuth.service;
 
 import com.rahand.common.dto.ResponseDto;
 
-import com.sinatech.lib.domain.shahkarAuth.dto.checkCode.CheckCodeRequest;
-import com.sinatech.lib.domain.shahkarAuth.dto.checkCode.CheckCodeResponse;
+import com.sinatech.lib.domain.shahkarAuth.dto.CheckCodeRequest;
 import com.sinatech.lib.domain.shahkarAuth.service.spec.EtemadAuth;
 import com.sinatech.lib.provider.shahkar.EtemadAuthService;
 

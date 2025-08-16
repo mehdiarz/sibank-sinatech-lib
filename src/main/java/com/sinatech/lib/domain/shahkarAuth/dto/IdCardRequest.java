@@ -1,4 +1,4 @@
-package com.sinatech.lib.domain.shahkarAuth.dto.checkIdCard;
+package com.sinatech.lib.domain.shahkarAuth.dto;
 
 import com.rahand.common.dto.BaseRequest;
 import lombok.Builder;
