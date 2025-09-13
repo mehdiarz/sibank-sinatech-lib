@@ -4,11 +4,7 @@ import com.rahand.common.dto.ResponseDto;
 import com.rahand.common.exception.CustomRuntimeException;
 import com.rahand.common.util.CommonUtil;
 import com.sinatech.lib.config.IntegrationLibConfig;
-import com.sinatech.lib.domain.shahkarAuth.dto.SimpleResponse;
-import com.sinatech.lib.domain.shahkarAuth.dto.CheckCodeRequest;
-import com.sinatech.lib.domain.shahkarAuth.dto.IdCardRequest;
-import com.sinatech.lib.domain.shahkarAuth.dto.ShahkarRequest;
-import com.sinatech.lib.domain.shahkarAuth.dto.VideoRequest;
+import com.sinatech.lib.domain.shahkarAuth.dto.*;
 import com.sinatech.lib.domain.shahkarAuth.service.spec.EtemadAuth;
 import com.sinatech.lib.provider.rialDigital.util.RialDigitalRestClient;
 import okhttp3.*;
@@ -64,15 +60,56 @@ public class EtemadAuthService implements EtemadAuth {
     }
 
     @Override
-    public ResponseDto<SimpleResponse> verifyIdCard(IdCardRequest request, String token) {
+    public ResponseDto<SimpleResponse> verifyIdCardWithFile(IdCardRequestWithFile request, String token) {
         OkHttpClient client = new OkHttpClient();
-
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("idCardImg", request.getIdCardImg().getName(),
                         RequestBody.create(MediaType.parse("image/jpeg"), request.getIdCardImg()))
                 .addFormDataPart("behindIdCardImg", request.getBehindIdCardImg().getName(),
                         RequestBody.create(MediaType.parse("image/jpeg"), request.getBehindIdCardImg()))
-                .addFormDataPart("birthDate", request.getBirthDate())
+                .addFormDataPart("birthDate", request.getBirthDate()).build();
+
+        Request httpRequest = new Request.Builder()
+                .url(BASE_URL + "idCard/")
+                .addHeader("Authorization", "Bearer " + token)
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(httpRequest).execute()) {
+            return wrapResponse(response, "کارت ملی");
+        } catch (IOException e) {
+            throw new CustomRuntimeException("IOException in verifyIdCard: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ResponseDto<SimpleResponse> verifyIdCardWithFile(VideoRequestWithFile request, String token) {
+        OkHttpClient client = new OkHttpClient();
+
+        RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                .addFormDataPart("personVideo", request.getPersonVideo().getName(),
+                        RequestBody.create(MediaType.parse("video/mp4"), request.getPersonVideo())).build();
+
+        Request httpRequest = new Request.Builder()
+                .url(BASE_URL + "video/")
+                .addHeader("Authorization", "Bearer " + token)
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(httpRequest).execute()) {
+            return wrapResponse(response, "ویدیو");
+        } catch (IOException e) {
+            throw new CustomRuntimeException("IOException in verifyVideo: " + e.getMessage());
+        }
+    }
+
+
+    @Override
+    public ResponseDto<SimpleResponse> verifyIdCard(IdCardRequest request, String token) {
+        OkHttpClient client = new OkHttpClient();
+        RequestBody body = new FormBody.Builder()
+                .add("fileId", request.getInstanceId())
+                .add("birthDate", request.getBirthDate())
                 .build();
 
         Request httpRequest = new Request.Builder()
@@ -92,9 +129,8 @@ public class EtemadAuthService implements EtemadAuth {
     public ResponseDto<SimpleResponse> verifyVideo(VideoRequest request, String token) {
         OkHttpClient client = new OkHttpClient();
 
-        RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
-                .addFormDataPart("personVideo", request.getPersonVideo().getName(),
-                        RequestBody.create(MediaType.parse("video/mp4"), request.getPersonVideo()))
+        RequestBody body = new FormBody.Builder()
+                .add("fileId", request.getInstanceId())
                 .build();
 
         Request httpRequest = new Request.Builder()

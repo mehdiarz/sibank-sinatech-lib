@@ -9,9 +9,8 @@ import java.io.File;
 @Builder
 @Setter
 @Getter
-public class VideoRequest extends BaseRequest {
+public class VideoRequestWithFile extends BaseRequest {
 
-    private String instanceId;
-
+    private File personVideo;
 
 }

@@ -1,5 +1,0 @@
-# Created at 2025-07-15T17:48:52.642
-Boot Manifest-JAR contains absolute paths in classpath 'D:\siank-sinatech-lib\sibank-sinatech-lib\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-
