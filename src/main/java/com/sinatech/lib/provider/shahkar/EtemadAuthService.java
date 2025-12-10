@@ -12,6 +12,7 @@ import okhttp3.*;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class EtemadAuthService implements EtemadAuth {
 
@@ -61,7 +62,11 @@ public class EtemadAuthService implements EtemadAuth {
 
     @Override
     public ResponseDto<SimpleResponse> verifyIdCardWithFile(IdCardRequestWithFile request, String token) {
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("idCardImg", request.getIdCardImg().getName(),
                         RequestBody.create(MediaType.parse("image/jpeg"), request.getIdCardImg()))
@@ -84,8 +89,11 @@ public class EtemadAuthService implements EtemadAuth {
 
     @Override
     public ResponseDto<SimpleResponse> verifyIdCardWithFile(VideoRequestWithFile request, String token) {
-        OkHttpClient client = new OkHttpClient();
-
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("personVideo", request.getPersonVideo().getName(),
                         RequestBody.create(MediaType.parse("video/mp4"), request.getPersonVideo())).build();
@@ -106,7 +114,11 @@ public class EtemadAuthService implements EtemadAuth {
 
     @Override
     public ResponseDto<SimpleResponse> verifyIdCard(IdCardRequest request, String token) {
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
         RequestBody body = new FormBody.Builder()
                 .add("fileId", request.getInstanceId())
                 .add("birthDate", request.getBirthDate())
@@ -127,8 +139,11 @@ public class EtemadAuthService implements EtemadAuth {
 
     @Override
     public ResponseDto<SimpleResponse> verifyVideo(VideoRequest request, String token) {
-        OkHttpClient client = new OkHttpClient();
-
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
         RequestBody body = new FormBody.Builder()
                 .add("fileId", request.getInstanceId())
                 .build();
