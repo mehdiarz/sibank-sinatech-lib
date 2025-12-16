@@ -39,7 +39,7 @@ public class TokenService implements cheque {
         try {
             logger.info("Requesting token from: {}", TOKEN_SERVICE_URL);
 
-
+            // استفاده از مقادیر درخواست یا مقادیر پیش‌فرض
             String clientId = tokenRequest.getClientId() != null && !tokenRequest.getClientId().isEmpty()
                     ? tokenRequest.getClientId() : CLIENT_ID;
             String clientSecret = tokenRequest.getClientSecret() != null && !tokenRequest.getClientSecret().isEmpty()
@@ -52,7 +52,7 @@ public class TokenService implements cheque {
                     ? tokenRequest.getGrantType() : "password";
             String refreshToken = tokenRequest.getRefreshToken();
 
-
+            // ساخت داده‌های فرم
             Map<String, String> formData = new LinkedHashMap<>();
             formData.put("client_id", clientId);
             formData.put("client_secret", clientSecret);
@@ -65,7 +65,7 @@ public class TokenService implements cheque {
                 formData.put("password", password);
             }
 
-
+            // ارسال درخواست
             Response response = TokenRestClient.postRequest(TOKEN_SERVICE_URL, formData);
 
             if (response.isSuccessful()) {
@@ -74,12 +74,12 @@ public class TokenService implements cheque {
 
                 TokenResponse tokenResponse = objectMapper.readValue(jsonResponse, TokenResponse.class);
 
-
+                // بررسی صحت پاسخ
                 if (tokenResponse.getAccessToken() == null || tokenResponse.getAccessToken().isEmpty()) {
                     tokenResponse.setError(true);
                     tokenResponse.setErrorMessage("Token response does not contain access_token");
                 } else {
-
+                    // ذخیره توکن
                     saveToken(tokenResponse);
                     logger.info("Token acquired successfully. Expires in: {} seconds", tokenResponse.getExpiresIn());
                 }
@@ -111,23 +111,75 @@ public class TokenService implements cheque {
 
     @Override
     public TokenResponse getCurrentToken(TokenRequest tokenRequest) {
-
+        // 1. اگر توکن داریم و هنوز منقضی نشده، برگردان
         if (currentToken != null && !isTokenExpired()) {
+            logger.debug("Using existing valid token");
             return currentToken;
         }
 
-
+        // 2. اگر توکن منقضی شده ولی refresh token معتبر داریم
         if (currentToken != null && currentToken.getRefreshToken() != null && !isRefreshTokenExpired()) {
-            logger.info("Token expired, refreshing with refresh token");
-            TokenRequest refreshRequest = new TokenRequest();
-            refreshRequest.setGrantType("refresh_token");
-            refreshRequest.setRefreshToken(currentToken.getRefreshToken());
-            return getToken(refreshRequest);
+            logger.info("Access token expired, refreshing with refresh token");
+            try {
+                TokenRequest refreshRequest = new TokenRequest();
+                refreshRequest.setGrantType("refresh_token");
+                refreshRequest.setRefreshToken(currentToken.getRefreshToken());
+                refreshRequest.setClientId(CLIENT_ID);
+                refreshRequest.setClientSecret(CLIENT_SECRET);
+
+                TokenResponse refreshedToken = getToken(refreshRequest);
+                if (!refreshedToken.isError()) {
+                    return refreshedToken;
+                }
+                logger.warn("Refresh token failed, trying to get new token with password");
+            } catch (Exception e) {
+                logger.warn("Failed to refresh token: {}", e.getMessage());
+            }
         }
 
+        // 3. در غیر این صورت توکن جدید با grant_type=password بگیر
+        logger.info("Getting new token with password grant");
+        TokenRequest passwordRequest = new TokenRequest();
+        passwordRequest.setGrantType("password");
+        passwordRequest.setClientId(CLIENT_ID);
+        passwordRequest.setClientSecret(CLIENT_SECRET);
+        passwordRequest.setUsername(USERNAME);
+        passwordRequest.setPassword(PASSWORD);
 
-        logger.info("No valid token, requesting new token");
-        return getToken(tokenRequest);
+        return getToken(passwordRequest);
+    }
+
+    // متد کمکی برای دریافت توکن اولیه
+    public TokenResponse initializeToken() {
+        logger.info("Initializing token for first time use");
+        TokenRequest request = new TokenRequest();
+        request.setGrantType("password");
+        request.setClientId(CLIENT_ID);
+        request.setClientSecret(CLIENT_SECRET);
+        request.setUsername(USERNAME);
+        request.setPassword(PASSWORD);
+
+        return getToken(request);
+    }
+
+    // متد برای refresh توکن
+    public TokenResponse refreshToken() {
+        if (currentToken == null || currentToken.getRefreshToken() == null) {
+            logger.error("Cannot refresh token: no refresh token available");
+            TokenResponse errorResponse = new TokenResponse();
+            errorResponse.setError(true);
+            errorResponse.setErrorMessage("No refresh token available");
+            return errorResponse;
+        }
+
+        logger.info("Refreshing token using refresh_token grant");
+        TokenRequest request = new TokenRequest();
+        request.setGrantType("refresh_token");
+        request.setClientId(CLIENT_ID);
+        request.setClientSecret(CLIENT_SECRET);
+        request.setRefreshToken(currentToken.getRefreshToken());
+
+        return getToken(request);
     }
 
     @Override
@@ -149,13 +201,13 @@ public class TokenService implements cheque {
     private void saveToken(TokenResponse tokenResponse) {
         this.currentToken = tokenResponse;
 
-
+        // محاسبه زمان انقضای access token
         if (tokenResponse.getExpiresIn() != null) {
             long expiresInMillis = (tokenResponse.getExpiresIn() - 60) * 1000L; // 60 ثانیه زودتر
             this.tokenExpiryTime = new Date(System.currentTimeMillis() + expiresInMillis);
         }
 
-
+        // محاسبه زمان انقضای refresh token
         if (tokenResponse.getRefreshExpiresIn() != null) {
             long refreshExpiresInMillis = (tokenResponse.getRefreshExpiresIn() - 60) * 1000L;
             this.refreshTokenExpiryTime = new Date(System.currentTimeMillis() + refreshExpiresInMillis);
@@ -179,7 +231,7 @@ public class TokenService implements cheque {
         return new Date().after(refreshTokenExpiryTime);
     }
 
-
+    // متد کمکی برای دریافت توکن جاری
     public String getCurrentAccessToken() {
         TokenRequest request = new TokenRequest();
         TokenResponse response = getCurrentToken(request);
@@ -189,7 +241,7 @@ public class TokenService implements cheque {
         return response.getAccessToken();
     }
 
-
+    // متدهای کمکی برای تست
     public TokenResponse getCurrentTokenResponse() {
         return currentToken;
     }
@@ -200,5 +252,22 @@ public class TokenService implements cheque {
 
     public Date getRefreshTokenExpiryTime() {
         return refreshTokenExpiryTime;
+    }
+
+    // متد برای بررسی وضعیت توکن
+    public String getTokenStatus() {
+        if (currentToken == null) {
+            return "NO_TOKEN";
+        }
+
+        if (isTokenExpired()) {
+            if (isRefreshTokenExpired()) {
+                return "BOTH_EXPIRED";
+            } else {
+                return "ACCESS_EXPIRED_REFRESH_VALID";
+            }
+        } else {
+            return "VALID";
+        }
     }
 }
