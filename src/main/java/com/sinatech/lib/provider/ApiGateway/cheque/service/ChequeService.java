@@ -7,6 +7,7 @@ import com.rahand.common.exception.CustomRuntimeException;
 import com.rahand.common.util.CommonUtil;
 import com.sinatech.lib.domain.bank.dto.*;
 import com.sinatech.lib.domain.bank.service.spec.cheque;
+import com.sinatech.lib.provider.ApiGateway.auth.service.TokenService;
 import com.sinatech.lib.provider.ApiGateway.cheque.util.ChequeRestClient;
 import okhttp3.Response;
 
@@ -18,9 +19,28 @@ public class ChequeService implements cheque {
     private static final String BASE_URL = "http://10.17.105.41:38021";
 
     private final ObjectMapper objectMapper;
+    private final TokenService tokenService;
 
     public ChequeService() {
         this.objectMapper = new ObjectMapper();
+        this.tokenService = new TokenService();
+        ChequeRestClient.setTokenService(this.tokenService); // اضافه کردن این خط
+    }
+
+    public ChequeService(TokenService tokenService) {
+        this.objectMapper = new ObjectMapper();
+        this.tokenService = tokenService;
+        ChequeRestClient.setTokenService(tokenService); // اضافه کردن این خط
+    }
+
+    @Override
+    public TokenResponse getToken(TokenRequest tokenRequest) {
+        return tokenService.getToken(tokenRequest);
+    }
+
+    @Override
+    public TokenResponse getCurrentToken(TokenRequest tokenRequest) {
+        return tokenService.getCurrentToken(tokenRequest);
     }
 
     @Override
@@ -28,77 +48,83 @@ public class ChequeService implements cheque {
         String ENDPOINT = "/tg/pichak/cheque/external/lowairy/owner-cheque-sirius-with-name";
 
         ChequeInquiryResponse chequeInquiryResponse = new ChequeInquiryResponse();
-        Map<String, String> requestMap = new LinkedHashMap<>();
+
+
+        Map<String, Object> requestMap = new LinkedHashMap<>();
         requestMap.put("sayadId", chequeInquiryRequest.getSayadId());
         requestMap.put("holderCif", chequeInquiryRequest.getHolderCif());
+
         CallerInfo callerInfo = chequeInquiryRequest.getCallerInfo();
         if (callerInfo != null) {
             try {
-                String callerInfoJson = objectMapper.writeValueAsString(callerInfo);
-                requestMap.put("callerInfo", callerInfoJson);
+
+                Map<String, Object> callerInfoMap = new LinkedHashMap<>();
+                callerInfoMap.put("callerBranchCode", callerInfo.getCallerBranchCode());
+                requestMap.put("callerInfo", callerInfoMap);
             } catch (Exception e) {
-                throw new CustomRuntimeException("Failed to convert CallerInfo to JSON: " + e.getMessage());
+                throw new CustomRuntimeException("Failed to convert CallerInfo to Map: " + e.getMessage());
             }
-        } else {
-            requestMap.put("callerInfo", "null");
         }
 
         String url = BASE_URL + ENDPOINT;
         Response response = ChequeRestClient.postRequest(url, requestMap);
-        if (response.isSuccessful()) {
 
+        if (response.isSuccessful()) {
             String jsonResponse = ChequeRestClient.responseBodyToString(response);
             chequeInquiryResponse = CommonUtil.jsonToObject(jsonResponse, ChequeInquiryResponse.class);
         }
         else {
             String jsonResponse = ChequeRestClient.responseBodyToString(response);
-            CommonUtil.logError(ChequeRestClient.class.getSimpleName(), "chequeInquiry", jsonResponse, ServiceLogsDto.builder()
-                    .input(CommonUtil.toJson(requestMap))
-                    .output(jsonResponse)
-                    .build());
+            CommonUtil.logError(ChequeRestClient.class.getSimpleName(), "chequeInquiry", jsonResponse,
+                    ServiceLogsDto.builder()
+                            .input(CommonUtil.toJson(requestMap))
+                            .output(jsonResponse)
+                            .build());
             throw new CustomRuntimeException(CommonErrorMessage.EXTERNAL_SERVICE_EXCEPTION_MESSAGE);
         }
         return chequeInquiryResponse;
     }
 
+    @Override
     public ChequeAcceptOrRejectResponse chequeAcceptOrReject(ChequeAcceptOrRejectRequest chequeAcceptOrRejectRequest){
         String ENDPOINT = "/tg/pichak/cheque/external/accept-or-reject";
 
         ChequeAcceptOrRejectResponse chequeAcceptOrRejectResponse = new ChequeAcceptOrRejectResponse();
         Map<String, Object> requestMap = new LinkedHashMap<>();
         requestMap.put("sayadId", chequeAcceptOrRejectRequest.getSayadId());
-        requestMap.put("acceptDescription",  chequeAcceptOrRejectRequest.getAcceptDescription());
-        requestMap.put("acceptorAgentCif",  chequeAcceptOrRejectRequest.getAcceptorAgentCif());
-        requestMap.put("acceptorCif",  chequeAcceptOrRejectRequest.getAcceptorCif());
+        requestMap.put("acceptDescription", chequeAcceptOrRejectRequest.getAcceptDescription());
+        requestMap.put("acceptorAgentCif", chequeAcceptOrRejectRequest.getAcceptorAgentCif());
+        requestMap.put("acceptorCif", chequeAcceptOrRejectRequest.getAcceptorCif());
+
         CallerInfo callerInfo = chequeAcceptOrRejectRequest.getCallerInfo();
         if (callerInfo != null) {
             try {
-                // ساخت Map برای callerInfo
+
                 Map<String, Object> callerInfoMap = new LinkedHashMap<>();
                 callerInfoMap.put("callerBranchCode", callerInfo.getCallerBranchCode());
-                requestMap.put("callerInfo", callerInfoMap); // ارسال به صورت Map
+                requestMap.put("callerInfo", callerInfoMap);
             } catch (Exception e) {
-                throw new CustomRuntimeException("Failed to convert CallerInfo to JSON: " + e.getMessage());
+                throw new CustomRuntimeException("Failed to convert CallerInfo to Map: " + e.getMessage());
             }
         }
-        requestMap.put("accept",  chequeAcceptOrRejectRequest.isAccept());
+        requestMap.put("accept", chequeAcceptOrRejectRequest.isAccept());
 
         String url = BASE_URL + ENDPOINT;
         Response response = ChequeRestClient.postRequest(url, requestMap);
-        if (response.isSuccessful()) {
 
+        if (response.isSuccessful()) {
             String jsonResponse = ChequeRestClient.responseBodyToString(response);
             chequeAcceptOrRejectResponse = CommonUtil.jsonToObject(jsonResponse, ChequeAcceptOrRejectResponse.class);
         }
         else {
             String jsonResponse = ChequeRestClient.responseBodyToString(response);
-            CommonUtil.logError(ChequeRestClient.class.getSimpleName(), "chequeAcceptOrReject", jsonResponse, ServiceLogsDto.builder()
-                    .input(CommonUtil.toJson(requestMap))
-                    .output(jsonResponse)
-                    .build());
+            CommonUtil.logError(ChequeRestClient.class.getSimpleName(), "chequeAcceptOrReject", jsonResponse,
+                    ServiceLogsDto.builder()
+                            .input(CommonUtil.toJson(requestMap))
+                            .output(jsonResponse)
+                            .build());
             throw new CustomRuntimeException(CommonErrorMessage.EXTERNAL_SERVICE_EXCEPTION_MESSAGE);
         }
         return chequeAcceptOrRejectResponse;
     }
-
 }
